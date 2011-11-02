@@ -41,8 +41,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InternalUtilities.cs" />
-    <Compile Include="Mbdb.cs" />
-    <Compile Include="Mbdx.cs" />
+    <Compile Include="MbdbFile.cs" />
+    <Compile Include="MbdbRecord.cs" />
+    <Compile Include="MbdbRecordCollection.cs" />
     <Compile Include="MobileBackup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

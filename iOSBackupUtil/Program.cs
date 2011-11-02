@@ -8,13 +8,17 @@ namespace iOSBackupUtil
 {
 	class Program
 	{
+		public static bool IsInDebugMode = System.Diagnostics.Debugger.IsAttached;
+
 		static void Main(string[] args)
 		{
-			MobileBackup mobileBackup = new MobileBackup(
-				@"C:\Users\gkaiser\Documents\Visual Studio 2010\Projects\iOSBackupUtil\iOSBackupLib\Resources\Manifest.mbdx",
-				@"C:\Users\gkaiser\Documents\Visual Studio 2010\Projects\iOSBackupUtil\iOSBackupLib\Resources\Manifest.mbdb");
+			MbdbFile mbdbFile = new MbdbFile(@"C:\Users\gkaiser\Documents\Visual Studio 2010\Projects\iOSBackupUtil\iOSBackupLib\Resources\Manifest.mbdb");
+			mbdbFile.ReadFile();
+			
+			foreach (string mbdbDomain in mbdbFile.UniqueDomains)
+				Console.WriteLine(mbdbDomain);
 
-
+			Console.Write("Done, press ENTER to quit...");
 			Console.ReadLine();
 		}
 	}

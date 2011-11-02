@@ -1,24 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace iOSBackupLib
 {
 	public class MobileBackup
 	{
-		private string _mbdxFile;
 		private string _mbdbFile;
+		private MbdbFile _bakMbdb;
 
-		public MobileBackup(string mbdxFile, string mbdbFile)
+		public MobileBackup(string mbdbFile)
 		{
-			_mbdxFile = mbdxFile;
 			_mbdbFile = mbdbFile;
 		}
 
-		public static void ReadBackup()
+		public void ReadBackup()
 		{
-
+			_bakMbdb = new MbdbFile(_mbdbFile);
+			_bakMbdb.ReadFile();
 		}
 
 	}

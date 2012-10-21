@@ -44,7 +44,6 @@
     <Compile Include="MbdbFile.cs" />
     <Compile Include="MbdbRecord.cs" />
     <Compile Include="MbdbRecordCollection.cs" />
-    <Compile Include="MobileBackup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -8,32 +8,10 @@ namespace iOSBackupLib
 	/// <summary>
 	/// 
 	/// </summary>
-	public enum MbdbRecordFileMode
+	public class MbdbFile 
 	{
-		/// <summary>
-		/// 
-		/// </summary>
-		DIR,
-		/// <summary>
-		/// 
-		/// </summary>
-		LINK,
-		/// <summary>
-		/// 
-		/// </summary>
-		FILE,
-		/// <summary>
-		/// 
-		/// </summary>
-		UNKNOWN
-	}
-
-	/// <summary>
-	/// 
-	/// </summary>
-	public class MbdbFile
-	{
-		private FileStream _fsMbdb;
+		private MemoryStream _msMbdb;
+		private bool? _validHeader = null;
 
 		public string HeaderId;
 		public uint RecordCount;
@@ -45,15 +23,50 @@ namespace iOSBackupLib
 		/// <param name="fileName">Name of the file.</param>
 		public MbdbFile(string fileName)
 		{
-			_fsMbdb = File.OpenRead(fileName);
+			FileStream fsMbdb = File.OpenRead(fileName);
 
-			byte[] bSig = new byte[6];
-			_fsMbdb.Read(bSig, 0, bSig.Length);
+			if (!this.HasValidHeader(fsMbdb))
+				throw new FormatException(
+					"The MBDB file specified is invalid. " + Environment.NewLine +
+					"Expected \"" + InternalUtilities.MBDX_HEADER_ID + "\"" + Environment.NewLine + 
+					"Recieved: \"" + this.HeaderId + "\"");
 
-			this.HeaderId = BitConverter.ToString(bSig);
+			_msMbdb = new MemoryStream();
+			byte[] bBuffer = new byte[4096];
+			int bytesRead = 0;
 
-			if (this.HeaderId != InternalUtilities.MBDB_HEADER_ID) // 6D-62-64-62-05-00 <==> m-b-d-b-5-0
-				throw new FormatException("The MBDB file specified is invalid. Expected \"" + InternalUtilities.MBDX_HEADER_ID + "\" got \"" + this.HeaderId + "\".");
+			while (true)
+			{
+				bytesRead = fsMbdb.Read(bBuffer, 0, bBuffer.Length);
+
+				if (bytesRead == 0)
+					break;
+
+				_msMbdb.Write(bBuffer, 0, bytesRead);
+			}
+
+			fsMbdb.Close();
+			_msMbdb.Seek(0, SeekOrigin.Begin);
+		}
+
+		/// <summary>
+		/// Returns a value indicating whether a file has a valid MBDB header.
+		/// </summary>
+		/// <param name="fsMbdb"></param>
+		/// <returns></returns>
+		public bool HasValidHeader(FileStream fsMbdb)
+		{
+			if (_validHeader == null)
+			{
+				byte[] bSig = new byte[6];
+				fsMbdb.Read(bSig, 0, bSig.Length);
+
+				this.HeaderId = BitConverter.ToString(bSig);
+
+				_validHeader = this.HeaderId != InternalUtilities.MBDB_HEADER_ID; // 6D-62-64-62-05-00 <==> m-b-d-b-5-0
+			}
+
+			return (_validHeader ?? false);
 		}
 
 		/// <summary>
@@ -61,39 +74,39 @@ namespace iOSBackupLib
 		/// </summary>
 		public void ReadFile()
 		{
-			while (_fsMbdb.Position < _fsMbdb.Length)
+			while (_msMbdb.Position < _msMbdb.Length)
 			{
 				MbdbRecord mbdbRec = new MbdbRecord();
-				mbdbRec.Domain = InternalUtilities.GetString(_fsMbdb);
-				mbdbRec.Path = InternalUtilities.GetString(_fsMbdb);
-				mbdbRec.LinkTarget = InternalUtilities.GetString(_fsMbdb);
-				mbdbRec.DataHash = InternalUtilities.GetString(_fsMbdb);
-				mbdbRec.Unknown_I = InternalUtilities.GetString(_fsMbdb);
-				mbdbRec.Mode = InternalUtilities.GetUInt16(_fsMbdb);
-				mbdbRec.Unknown_II = InternalUtilities.GetUInt32(_fsMbdb);
-				mbdbRec.Unknown_III = InternalUtilities.GetUInt32(_fsMbdb);
-				mbdbRec.UserId = InternalUtilities.GetUInt32(_fsMbdb);
-				mbdbRec.GroupId = InternalUtilities.GetUInt32(_fsMbdb);
-				mbdbRec.Time_I = InternalUtilities.GetUInt32(_fsMbdb);
-				mbdbRec.Time_II = InternalUtilities.GetUInt32(_fsMbdb);
-				mbdbRec.Time_III = InternalUtilities.GetUInt32(_fsMbdb);
-				mbdbRec.FileLength = InternalUtilities.GetUInt64(_fsMbdb);
-				mbdbRec.Flag = (byte)_fsMbdb.ReadByte();
-				mbdbRec.PropertyCount = (byte)_fsMbdb.ReadByte();
+				mbdbRec.Domain = InternalUtilities.GetString(_msMbdb);
+				mbdbRec.Path = InternalUtilities.GetString(_msMbdb);
+				mbdbRec.LinkTarget = InternalUtilities.GetString(_msMbdb);
+				mbdbRec.DataHash = InternalUtilities.GetString(_msMbdb);
+				mbdbRec.Unknown_I = InternalUtilities.GetString(_msMbdb);
+				mbdbRec.Mode = InternalUtilities.GetUInt16(_msMbdb);
+				mbdbRec.Unknown_II = InternalUtilities.GetUInt32(_msMbdb);
+				mbdbRec.Unknown_III = InternalUtilities.GetUInt32(_msMbdb);
+				mbdbRec.UserId = InternalUtilities.GetUInt32(_msMbdb);
+				mbdbRec.GroupId = InternalUtilities.GetUInt32(_msMbdb);
+				mbdbRec.Time_I = InternalUtilities.GetUInt32(_msMbdb);
+				mbdbRec.Time_II = InternalUtilities.GetUInt32(_msMbdb);
+				mbdbRec.Time_III = InternalUtilities.GetUInt32(_msMbdb);
+				mbdbRec.FileLength = InternalUtilities.GetUInt64(_msMbdb);
+				mbdbRec.Flag = (byte)_msMbdb.ReadByte();
+				mbdbRec.PropertyCount = (byte)_msMbdb.ReadByte();
 
 				if (mbdbRec.Properties == null)
 					mbdbRec.Properties = new Dictionary<string, string>();
 
 				for (int i = 0; i < mbdbRec.PropertyCount; i++)
 				{
-					string propName = InternalUtilities.GetString(_fsMbdb);
-					string propVal = InternalUtilities.GetPropertyValue(_fsMbdb);
+					string propName = InternalUtilities.GetString(_msMbdb);
+					string propVal = InternalUtilities.GetPropertyValue(_msMbdb);
 					mbdbRec.Properties.Add(propName, propVal);
 				}
 
 				this.MbdbRecords.Add(mbdbRec);
 
-				Console.WriteLine(_fsMbdb.Position.ToString("000000000") + " / " + _fsMbdb.Length.ToString("000000000"));
+				Console.WriteLine(_msMbdb.Position.ToString("000000000") + " / " + _msMbdb.Length.ToString("000000000"));
 			}
 		}
 
@@ -122,4 +135,5 @@ namespace iOSBackupLib
 		}
 
 	}
+
 }

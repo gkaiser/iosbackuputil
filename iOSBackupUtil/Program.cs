@@ -12,7 +12,9 @@ namespace iOSBackupUtil
 
 		static void Main(string[] args)
 		{
-			MbdbFile mbdbFile = new MbdbFile(@"C:\Users\gkaiser\Documents\Visual Studio 2010\Projects\iOSBackupUtil\iOSBackupLib\Resources\Manifest.mbdb");
+			// A test "Manifest.mbdb" file is currently copied
+			// into the working-directory prior to build.
+			MbdbFile mbdbFile = new MbdbFile(@"Manifest.mbdb");
 			mbdbFile.ReadFile();
 			
 			foreach (string mbdbDomain in mbdbFile.UniqueDomains)

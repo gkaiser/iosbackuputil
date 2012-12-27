@@ -1,4 +1,6 @@
-﻿# References
+# References
+[Python MBDX Parser.](http://stackoverflow.com/questions/3085153/how-to-parse-the-manifest-mbdb-file-in-an-ios-4-0-itunes-backup/3130860#3130860)
+
 [C# Integer to hex and back.](http://stackoverflow.com/questions/1139957/c-sharp-convert-integer-to-hex-and-back-again)
 
 [How to parse the MBDB file.](http://stackoverflow.com/questions/3085153/how-to-parse-the-manifest-mbdb-file-in-an-ios-4-0-itunes-backup)

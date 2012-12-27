@@ -6,98 +6,79 @@ namespace iOSBackupLib
 {
 	internal static class InternalUtilities
 	{
-		internal const string MBDX_HEADER_ID = "6D-62-64-78-02-00";
-		internal const string MBDB_HEADER_ID = "6D-62-64-62-05-00";
+		internal static readonly byte[] MBDB_HEADER_BYTES = new byte[] { 0x6D, 0x62, 0x64, 0x62, 0x05, 0x00 };
 
-		internal static string GetString(Stream sMobileBackup)
+		internal static string ReadStringValue(Stream stream)
 		{
-			int byteFirst = sMobileBackup.ReadByte();
-			int byteSecond = sMobileBackup.ReadByte();
+			int b0 = stream.ReadByte();
+			int b1 = stream.ReadByte();
 
-			if (byteFirst == 255 && byteSecond == 255)
+			if (b0 == 255 && b1 == 255)
 				return "NA";
 
-			sMobileBackup.Seek(-2, SeekOrigin.Current);
+			ushort strLen = BitConverter.ToUInt16(new byte[] { (byte)b1, (byte)b0 }, 0);
 
-			ushort stringLen = InternalUtilities.GetUInt16(sMobileBackup);
+			byte[] buffer = new byte[strLen];
+			stream.Read(buffer, 0, buffer.Length);
 
-			byte[] bStringBuff = new byte[stringLen];
-			sMobileBackup.Read(bStringBuff, 0, bStringBuff.Length);
-
-			string decodedString = Encoding.UTF8.GetString(bStringBuff, 0, stringLen);
+			string decodedString = Encoding.UTF8.GetString(buffer, 0, strLen);
 
 			return decodedString.Normalize(NormalizationForm.FormC);
 		}
 
-		internal static Int16 GetInt16(Stream sMobileBackup)
+		internal static Int16 ReadInt16Value(Stream stream)
 		{
 			byte[] bBuffer = new byte[2];
-			sMobileBackup.Read(bBuffer, 0, bBuffer.Length);
-
-			if (BitConverter.IsLittleEndian)
-				Array.Reverse(bBuffer, 0, bBuffer.Length);
-
+			InternalUtilities.CopyStreamToBuffer(stream, ref bBuffer);
+			
 			return BitConverter.ToInt16(bBuffer, 0);
 		}
 
-		internal static UInt16 GetUInt16(Stream sMobileBackup)
+		internal static UInt16 ReadUInt16Value(Stream stream)
 		{
 			byte[] bBuffer = new byte[2];
-			sMobileBackup.Read(bBuffer, 0, bBuffer.Length);
-
-			if (BitConverter.IsLittleEndian)
-				Array.Reverse(bBuffer, 0, bBuffer.Length);
+			InternalUtilities.CopyStreamToBuffer(stream, ref bBuffer);
 
 			return BitConverter.ToUInt16(bBuffer, 0);
 		}
 
-		internal static Int32 GetInt32(Stream sMobileBackup)
+		internal static Int32 ReadInt32Value(Stream stream)
 		{
 			byte[] bBuffer = new byte[4];
-			sMobileBackup.Read(bBuffer, 0, bBuffer.Length);
-
-			if (BitConverter.IsLittleEndian)
-				Array.Reverse(bBuffer, 0, bBuffer.Length);
+			InternalUtilities.CopyStreamToBuffer(stream, ref bBuffer);
 
 			return BitConverter.ToInt32(bBuffer, 0);
 		}
 
-		internal static UInt32 GetUInt32(Stream sMobileBackup)
+		internal static UInt32 ReadUInt32Value(Stream stream)
 		{
 			byte[] bBuffer = new byte[4];
-			sMobileBackup.Read(bBuffer, 0, bBuffer.Length);
-
-			if (BitConverter.IsLittleEndian)
-				Array.Reverse(bBuffer, 0, bBuffer.Length);
+			InternalUtilities.CopyStreamToBuffer(stream, ref bBuffer);
 
 			return BitConverter.ToUInt32(bBuffer, 0);
 		}
 
-		internal static UInt64 GetUInt64(Stream sMobileBackup)
+		internal static UInt64 ReadUInt64Value(Stream stream)
 		{
 			byte[] bBuffer = new byte[8];
-			sMobileBackup.Read(bBuffer, 0, bBuffer.Length);
-
-			if (BitConverter.IsLittleEndian)
-				Array.Reverse(bBuffer, 0, bBuffer.Length);
-
+			InternalUtilities.CopyStreamToBuffer(stream, ref bBuffer); 
+			
 			return BitConverter.ToUInt64(bBuffer, 0);
 		}
 
-		internal static string GetPropertyValue(Stream sMobileBackup)
+		internal static string ReadPropertyValue(Stream stream)
 		{
-			int byteFirst = sMobileBackup.ReadByte();
-			int byteSecond = sMobileBackup.ReadByte();
+			byte[] length = new byte[2];
+			stream.Read(length, 0, length.Length);
 
-			if (byteFirst == 255 && byteSecond == 255)
+			if (length[0] == 255 && length[1] == 255)
 				return "NA";
 
-			sMobileBackup.Seek(-2, SeekOrigin.Current);
-
-			ushort stringLen = InternalUtilities.GetUInt16(sMobileBackup);
+			ushort stringLen = BitConverter.ToUInt16(
+				new byte[] { length[1], length [0] } , 0);
 
 			byte[] bStringBuff = new byte[stringLen];
-			sMobileBackup.Read(bStringBuff, 0, bStringBuff.Length);
+			stream.Read(bStringBuff, 0, bStringBuff.Length);
 
 			bool foundUnprintable = false;
 			for (int i = 0; i < bStringBuff.Length; i++)
@@ -111,14 +92,16 @@ namespace iOSBackupLib
 
 			if (!foundUnprintable)
 				return Encoding.UTF8.GetString(bStringBuff, 0, bStringBuff.Length);
+			else
+				return Convert.ToBase64String(bStringBuff);
+		}
 
-			StringBuilder sbTemp = new StringBuilder();
-			for (int i = 0; i < bStringBuff.Length; i++)
-			{
-				sbTemp.Append(((int)bStringBuff[i]).ToString("X").ToLower());
-			}
+		internal static void CopyStreamToBuffer(Stream s, ref byte[] b)
+		{
+			s.Read(b, 0, b.Length);
 
-			return sbTemp.ToString();
+			if (BitConverter.IsLittleEndian)
+				Array.Reverse(b);
 		}
 
 		internal static string EpochTimeToString(int epochTime)
@@ -127,6 +110,22 @@ namespace iOSBackupLib
 
 			return dtEpoch.AddSeconds(epochTime).ToString("MM/dd/yyyy hh:mm:ss tt");
 		}
+
+		internal static bool ByteArraysAreEqual(byte[] bA, byte[] bB)
+		{
+			if (bA == null || bB == null)
+				return false;
+			if (bA.Length != bB.Length)
+				return false;
+
+			for (int i = 0; i < bA.Length; i++)
+				if (bA[i] != bB[i])
+					return false;
+
+			return true;
+		}
+
+		
 
 	}
 }

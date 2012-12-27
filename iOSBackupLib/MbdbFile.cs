@@ -10,12 +10,13 @@ namespace iOSBackupLib
 	/// </summary>
 	public class MbdbFile 
 	{
-		private MemoryStream _msMbdb;
+		private FileStream _fsMbdb = null;
 		private bool? _validHeader = null;
 
-		public string HeaderId;
+		public byte[] HeaderId;
 		public uint RecordCount;
 		public MbdbRecordCollection MbdbRecords = new MbdbRecordCollection();
+
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="MbdbFile"/> class.
@@ -23,91 +24,85 @@ namespace iOSBackupLib
 		/// <param name="fileName">Name of the file.</param>
 		public MbdbFile(string fileName)
 		{
-			FileStream fsMbdb = File.OpenRead(fileName);
+			_fsMbdb = File.OpenRead(fileName);
 
-			if (!this.HasValidHeader(fsMbdb))
+			if (!this.StreamHasValidHeader)
 				throw new FormatException(
 					"The MBDB file specified is invalid. " + Environment.NewLine +
-					"Expected \"" + InternalUtilities.MBDX_HEADER_ID + "\"" + Environment.NewLine + 
+					//"Expected \"" + InternalUtilities.MBDB_HEADER_ID + "\"" + Environment.NewLine + 
 					"Recieved: \"" + this.HeaderId + "\"");
-
-			_msMbdb = new MemoryStream();
-			byte[] bBuffer = new byte[4096];
-			int bytesRead = 0;
-
-			while (true)
-			{
-				bytesRead = fsMbdb.Read(bBuffer, 0, bBuffer.Length);
-
-				if (bytesRead == 0)
-					break;
-
-				_msMbdb.Write(bBuffer, 0, bytesRead);
-			}
-
-			fsMbdb.Close();
-			_msMbdb.Seek(0, SeekOrigin.Begin);
 		}
 
 		/// <summary>
 		/// Returns a value indicating whether a file has a valid MBDB header.
 		/// </summary>
-		/// <param name="fsMbdb"></param>
+		/// <param name="sMbdb"></param>
 		/// <returns></returns>
-		public bool HasValidHeader(FileStream fsMbdb)
+		private bool StreamHasValidHeader
 		{
-			if (_validHeader == null)
+			get
 			{
-				byte[] bSig = new byte[6];
-				fsMbdb.Read(bSig, 0, bSig.Length);
+				if (_validHeader == null)
+				{
+					try
+					{
+						if (_fsMbdb.Position != 0)
+							_fsMbdb.Seek(0, SeekOrigin.Begin);
 
-				this.HeaderId = BitConverter.ToString(bSig);
+						byte[] bSig = new byte[6];
 
-				_validHeader = this.HeaderId != InternalUtilities.MBDB_HEADER_ID; // 6D-62-64-62-05-00 <==> m-b-d-b-5-0
+						_fsMbdb.Read(bSig, 0, bSig.Length);
+
+						this.HeaderId = bSig;
+
+						_validHeader = InternalUtilities.ByteArraysAreEqual(this.HeaderId, InternalUtilities.MBDB_HEADER_BYTES);
+					}
+					catch { return false; }
+				}
+
+				return (_validHeader ?? false);
 			}
-
-			return (_validHeader ?? false);
 		}
 
 		/// <summary>
-		/// Reads the file.
+		/// Reads the file, and closes the stream related to it.
 		/// </summary>
 		public void ReadFile()
 		{
-			while (_msMbdb.Position < _msMbdb.Length)
+			while (_fsMbdb.Position < _fsMbdb.Length)
 			{
 				MbdbRecord mbdbRec = new MbdbRecord();
-				mbdbRec.Domain = InternalUtilities.GetString(_msMbdb);
-				mbdbRec.Path = InternalUtilities.GetString(_msMbdb);
-				mbdbRec.LinkTarget = InternalUtilities.GetString(_msMbdb);
-				mbdbRec.DataHash = InternalUtilities.GetString(_msMbdb);
-				mbdbRec.Unknown_I = InternalUtilities.GetString(_msMbdb);
-				mbdbRec.Mode = InternalUtilities.GetUInt16(_msMbdb);
-				mbdbRec.Unknown_II = InternalUtilities.GetUInt32(_msMbdb);
-				mbdbRec.Unknown_III = InternalUtilities.GetUInt32(_msMbdb);
-				mbdbRec.UserId = InternalUtilities.GetUInt32(_msMbdb);
-				mbdbRec.GroupId = InternalUtilities.GetUInt32(_msMbdb);
-				mbdbRec.Time_I = InternalUtilities.GetUInt32(_msMbdb);
-				mbdbRec.Time_II = InternalUtilities.GetUInt32(_msMbdb);
-				mbdbRec.Time_III = InternalUtilities.GetUInt32(_msMbdb);
-				mbdbRec.FileLength = InternalUtilities.GetUInt64(_msMbdb);
-				mbdbRec.Flag = (byte)_msMbdb.ReadByte();
-				mbdbRec.PropertyCount = (byte)_msMbdb.ReadByte();
+				mbdbRec.Domain = InternalUtilities.ReadStringValue(_fsMbdb);
+				mbdbRec.Path = InternalUtilities.ReadStringValue(_fsMbdb);
+				mbdbRec.LinkTarget = InternalUtilities.ReadStringValue(_fsMbdb);
+				mbdbRec.DataHash = InternalUtilities.ReadStringValue(_fsMbdb);
+				mbdbRec.Unknown_I = InternalUtilities.ReadStringValue(_fsMbdb);
+				mbdbRec.Mode = InternalUtilities.ReadUInt16Value(_fsMbdb);
+				mbdbRec.Unknown_II = InternalUtilities.ReadUInt32Value(_fsMbdb);
+				mbdbRec.Unknown_III = InternalUtilities.ReadUInt32Value(_fsMbdb);
+				mbdbRec.UserId = InternalUtilities.ReadUInt32Value(_fsMbdb);
+				mbdbRec.GroupId = InternalUtilities.ReadUInt32Value(_fsMbdb);
+				mbdbRec.Time_I = InternalUtilities.ReadUInt32Value(_fsMbdb);
+				mbdbRec.Time_II = InternalUtilities.ReadUInt32Value(_fsMbdb);
+				mbdbRec.Time_III = InternalUtilities.ReadUInt32Value(_fsMbdb);
+				mbdbRec.FileLength = InternalUtilities.ReadUInt64Value(_fsMbdb);
+				mbdbRec.Flag = (byte)_fsMbdb.ReadByte();
+				mbdbRec.PropertyCount = (byte)_fsMbdb.ReadByte();
 
 				if (mbdbRec.Properties == null)
 					mbdbRec.Properties = new Dictionary<string, string>();
 
 				for (int i = 0; i < mbdbRec.PropertyCount; i++)
 				{
-					string propName = InternalUtilities.GetString(_msMbdb);
-					string propVal = InternalUtilities.GetPropertyValue(_msMbdb);
+					string propName = InternalUtilities.ReadStringValue(_fsMbdb);
+					string propVal = InternalUtilities.ReadPropertyValue(_fsMbdb);
 					mbdbRec.Properties.Add(propName, propVal);
 				}
 
 				this.MbdbRecords.Add(mbdbRec);
-
-				Console.WriteLine(_msMbdb.Position.ToString("000000000") + " / " + _msMbdb.Length.ToString("000000000"));
 			}
+
+			_fsMbdb.Close();
 		}
 
 		/// <summary>

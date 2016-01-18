@@ -43,7 +43,7 @@
     <Compile Include="InternalUtilities.cs" />
     <Compile Include="MbdbFile.cs" />
     <Compile Include="MbdbRecord.cs" />
-    <Compile Include="MbdbRecordCollection.cs" />
+    <Compile Include="MbdbRecordFileMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -15,17 +15,16 @@ namespace iOSBackupLib
 		public string Path = null;
 		public string LinkTarget = null;
 		public string DataHash = null;
-		public string Unknown_I = null;
-		public ushort Mode = 0;
-		public uint Unknown_II = 0;
-		public uint Unknown_III = 0;
+		public string Unknown_I = null; // EncryptionKey
+		public ushort Mode = 0; 
+		public ulong iNodeLookup = 0; // iNode Lookup Number
 		public uint UserId = 0;
 		public uint GroupId = 0;
-		public uint Time_I = 0;
-		public uint Time_II = 0;
-		public uint Time_III = 0;
+		public uint LastModifiedTime = 0;
+		public uint LastAccessTime = 0;
+		public uint CreationTime = 0;
 		public ulong FileLength = 0;
-		public byte Flag = 0;
+		public byte ProtectionClass = 0;
 		public byte PropertyCount = 0;
 		public Dictionary<string, string> Properties = new Dictionary<string, string>();
 
@@ -109,11 +108,11 @@ namespace iOSBackupLib
 			Console.WriteLine("  Unknown II      : " + this.Unknown_II);
 			Console.WriteLine("  User ID         : " + this.UserId.ToString());
 			Console.WriteLine("  Group ID        : " + this.GroupId.ToString());
-			Console.WriteLine("  Time I          : " + InternalUtilities.EpochTimeToString((int)this.Time_I));
-			Console.WriteLine("  Time II         : " + InternalUtilities.EpochTimeToString((int)this.Time_II));
-			Console.WriteLine("  Time III        : " + InternalUtilities.EpochTimeToString((int)this.Time_III));
+			Console.WriteLine("  Time I          : " + InternalUtilities.EpochTimeToString((int)this.LastModifiedTime));
+			Console.WriteLine("  Time II         : " + InternalUtilities.EpochTimeToString((int)this.LastAccessTime));
+			Console.WriteLine("  Time III        : " + InternalUtilities.EpochTimeToString((int)this.CreationTime));
 			Console.WriteLine("  File Length     : " + this.FileLength.ToString());
-			Console.WriteLine("  Flag            : " + this.Flag.ToString());
+			Console.WriteLine("  Flag            : " + this.ProtectionClass.ToString());
 			Console.WriteLine("  Property Ct     : " + this.PropertyCount.ToString());
 			Console.WriteLine("  Filename (Hash) : " + this.FilenameAsHash + " (" + this.FilenameAsHashExists() + ")");
 
@@ -123,28 +122,5 @@ namespace iOSBackupLib
 			Console.WriteLine();
 		}
 
-	}
-
-	/// <summary>
-	/// 
-	/// </summary>
-	public enum MbdbRecordFileMode
-	{
-		/// <summary>
-		/// 
-		/// </summary>
-		DIR,
-		/// <summary>
-		/// 
-		/// </summary>
-		LINK,
-		/// <summary>
-		/// 
-		/// </summary>
-		FILE,
-		/// <summary>
-		/// 
-		/// </summary>
-		UNKNOWN
 	}
 }

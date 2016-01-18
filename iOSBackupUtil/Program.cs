@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using iOSBackupLib;
+using System.IO;
 
 namespace iOSBackupUtil
 {
@@ -14,7 +15,38 @@ namespace iOSBackupUtil
 		{
 			// A test "Manifest.mbdb" file is currently copied
 			// into the working-directory prior to build.
-			MbdbFile mbdbFile = new MbdbFile(@"C:\Users\gkaiser\AppData\Roaming\Apple Computer\MobileSync\Backup\90a6456ba232442db2715bcead0110521f585141\Manifest.mbdb");
+			bool go = false;
+			string[] dirs = null;
+			int selection = -1;
+
+			do
+			{
+				Console.WriteLine("******************************");
+				Console.WriteLine("IOSBACKUPUTIL " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString());
+				Console.WriteLine("******************************");
+				Console.WriteLine("Please select a backup to analyze:");
+
+				dirs = System.IO.Directory.GetDirectories(@"C:\Users\gkaiser\AppData\Roaming\Apple Computer\MobileSync\Backup\");
+				for (int i = 0; i < dirs.Length; i++)
+				{
+					Console.Write(i.ToString(new string('0', dirs.Length.ToString().Length)));
+					Console.Write(") ");
+					Console.Write(new DirectoryInfo(dirs[i]).LastWriteTime.ToString("yyyy-MM-dd"));
+					Console.WriteLine(dirs[i].Substring(dirs[i].LastIndexOf(Path.DirectorySeparatorChar)));
+				}
+
+				Console.Write("Backup to analyze: ");
+				string readVal = Console.ReadLine();
+
+				Console.WriteLine();
+				Console.WriteLine();
+
+				selection = -1;
+				go = (int.TryParse(readVal, out selection) && selection >= 0 && selection < dirs.Length);
+			} while (go == false);
+
+      string dbgFile = @"C:\Users\gkaiser\AppData\Roaming\Apple Computer\MobileSync\Backup\3d73f1e6319fcafbb8feb21ba94355d9c4a6d99d\Manifest.mbdb";
+      MbdbFile mbdbFile = new MbdbFile(dirs[selection] + @"\Manifest.mbdb");
 			mbdbFile.ReadFile();
 			
 			foreach (string mbdbDomain in mbdbFile.UniqueDomains)

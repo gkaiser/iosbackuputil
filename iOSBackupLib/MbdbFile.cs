@@ -15,7 +15,7 @@ namespace iOSBackupLib
 
 		public byte[] HeaderId;
 		public uint RecordCount;
-		public MbdbRecordCollection MbdbRecords = new MbdbRecordCollection();
+		public List<MbdbRecord> MbdbRecords = new List<MbdbRecord>();
 
 
 		/// <summary>
@@ -28,8 +28,7 @@ namespace iOSBackupLib
 
 			if (!this.StreamHasValidHeader)
 				throw new FormatException(
-					"The MBDB file specified is invalid. " + Environment.NewLine +
-					//"Expected \"" + InternalUtilities.MBDB_HEADER_ID + "\"" + Environment.NewLine + 
+					"The MBDB file specified does not have a valid header." + Environment.NewLine +
 					"Recieved: \"" + this.HeaderId + "\"");
 		}
 
@@ -78,21 +77,19 @@ namespace iOSBackupLib
 				mbdbRec.DataHash = InternalUtilities.ReadStringValue(_fsMbdb);
 				mbdbRec.Unknown_I = InternalUtilities.ReadStringValue(_fsMbdb);
 				mbdbRec.Mode = InternalUtilities.ReadUInt16Value(_fsMbdb);
-				mbdbRec.Unknown_II = InternalUtilities.ReadUInt32Value(_fsMbdb);
-				mbdbRec.Unknown_III = InternalUtilities.ReadUInt32Value(_fsMbdb);
+				mbdbRec.iNodeLookup = InternalUtilities.ReadUInt64Value(_fsMbdb);
 				mbdbRec.UserId = InternalUtilities.ReadUInt32Value(_fsMbdb);
 				mbdbRec.GroupId = InternalUtilities.ReadUInt32Value(_fsMbdb);
-				mbdbRec.Time_I = InternalUtilities.ReadUInt32Value(_fsMbdb);
-				mbdbRec.Time_II = InternalUtilities.ReadUInt32Value(_fsMbdb);
-				mbdbRec.Time_III = InternalUtilities.ReadUInt32Value(_fsMbdb);
+				mbdbRec.LastModifiedTime = InternalUtilities.ReadUInt32Value(_fsMbdb);
+				mbdbRec.LastAccessTime = InternalUtilities.ReadUInt32Value(_fsMbdb);
+				mbdbRec.CreationTime = InternalUtilities.ReadUInt32Value(_fsMbdb);
 				mbdbRec.FileLength = InternalUtilities.ReadUInt64Value(_fsMbdb);
-				mbdbRec.Flag = (byte)_fsMbdb.ReadByte();
+				mbdbRec.ProtectionClass = (byte)_fsMbdb.ReadByte();
 				mbdbRec.PropertyCount = (byte)_fsMbdb.ReadByte();
 
-				if (mbdbRec.Properties == null)
-					mbdbRec.Properties = new Dictionary<string, string>();
+				mbdbRec.Properties = new Dictionary<string, string>();
 
-				for (int i = 0; i < mbdbRec.PropertyCount; i++)
+        for (int i = 0; i < mbdbRec.PropertyCount; i++)
 				{
 					string propName = InternalUtilities.ReadStringValue(_fsMbdb);
 					string propVal = InternalUtilities.ReadPropertyValue(_fsMbdb);
@@ -113,9 +110,9 @@ namespace iOSBackupLib
 		{
 			get
 			{
-				List<string> lstDomains = new List<string>();
+				var lstDomains = new List<string>();
 
-				foreach (MbdbRecord mbdbRec in MbdbRecords)
+				foreach (var mbdbRec in this.MbdbRecords)
 				{
 					if (lstDomains.Contains(mbdbRec.Domain))
 						continue;
@@ -123,12 +120,9 @@ namespace iOSBackupLib
 					lstDomains.Add(mbdbRec.Domain);
 				}
 
-				lstDomains.Sort();
-
 				return lstDomains;
 			}
 		}
 
 	}
-
 }

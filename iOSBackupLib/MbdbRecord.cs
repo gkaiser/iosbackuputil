@@ -46,9 +46,9 @@ namespace iOSBackupLib
 				if (_filenameAsHash != null)
 					return _filenameAsHash;
 
-				string fullFile = Domain + "-" + Path;
-				byte[] bfullFile = Encoding.UTF8.GetBytes(fullFile);
-				byte[] bHash = new System.Security.Cryptography.SHA1CryptoServiceProvider().ComputeHash(bfullFile);
+				var fullFile = Domain + "-" + Path;
+				var bfullFile = Encoding.UTF8.GetBytes(fullFile);
+				var bHash = new System.Security.Cryptography.SHA1CryptoServiceProvider().ComputeHash(bfullFile);
 
 				_filenameAsHash = BitConverter.ToString(bHash).Replace("-", "").ToLower();
 
@@ -87,7 +87,7 @@ namespace iOSBackupLib
 			if (this.RecordMode != MbdbRecordFileMode.FILE)
 				return false;
 
-			List<string> lstTemp = new List<string>(System.IO.File.ReadAllLines(@"FileListing.txt"));
+			var lstTemp = new List<string>(System.IO.File.ReadAllLines(@"FileListing.txt"));
 
 			return lstTemp.Contains(this.FilenameAsHash);
 		}
@@ -105,19 +105,19 @@ namespace iOSBackupLib
 			Console.WriteLine("  Data Hash       : " + this.DataHash);
 			Console.WriteLine("  Unknown I       : " + this.Unknown_I);
 			Console.WriteLine("  File Mode       : " + this.RecordMode);
-			Console.WriteLine("  Unknown II      : " + this.Unknown_II);
-			Console.WriteLine("  User ID         : " + this.UserId.ToString());
-			Console.WriteLine("  Group ID        : " + this.GroupId.ToString());
-			Console.WriteLine("  Time I          : " + InternalUtilities.EpochTimeToString((int)this.LastModifiedTime));
-			Console.WriteLine("  Time II         : " + InternalUtilities.EpochTimeToString((int)this.LastAccessTime));
-			Console.WriteLine("  Time III        : " + InternalUtilities.EpochTimeToString((int)this.CreationTime));
-			Console.WriteLine("  File Length     : " + this.FileLength.ToString());
-			Console.WriteLine("  Flag            : " + this.ProtectionClass.ToString());
-			Console.WriteLine("  Property Ct     : " + this.PropertyCount.ToString());
+			Console.WriteLine("  Unknown II      : " + "(this used to be \"Unknown_II\", but that's disappeared)");
+			Console.WriteLine("  User ID         : " + this.UserId);
+			Console.WriteLine("  Group ID        : " + this.GroupId);
+			Console.WriteLine("  Time I          : " + InternalUtilities.EpochTimeToString(this.LastModifiedTime));
+			Console.WriteLine("  Time II         : " + InternalUtilities.EpochTimeToString(this.LastAccessTime));
+			Console.WriteLine("  Time III        : " + InternalUtilities.EpochTimeToString(this.CreationTime));
+			Console.WriteLine("  File Length     : " + this.FileLength);
+			Console.WriteLine("  Flag            : " + this.ProtectionClass);
+			Console.WriteLine("  Property Ct     : " + this.PropertyCount);
 			Console.WriteLine("  Filename (Hash) : " + this.FilenameAsHash + " (" + this.FilenameAsHashExists() + ")");
 
-			foreach (string propKey in this.Properties.Keys)
-				Console.WriteLine("    " + propKey + " ==> " + this.Properties[propKey]);
+			foreach (var propKey in this.Properties.Keys)
+				Console.WriteLine($"    {propKey} ==> {this.Properties[propKey]}");
 
 			Console.WriteLine();
 		}

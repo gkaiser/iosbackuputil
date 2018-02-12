@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 
@@ -41,26 +42,26 @@ namespace iOSBackupLib
 		{
 			get
 			{
-				if (_validHeader == null)
-				{
-					try
-					{
-						if (_fsMbdb.Position != 0)
-							_fsMbdb.Seek(0, SeekOrigin.Begin);
+        if (_validHeader != null)
+          return _validHeader ?? false;
 
-						byte[] bSig = new byte[6];
+        try
+        {
+          if (_fsMbdb.Position != 0)
+            _fsMbdb.Seek(0, SeekOrigin.Begin);
 
-						_fsMbdb.Read(bSig, 0, bSig.Length);
+          var bSig = new byte[6];
 
-						this.HeaderId = bSig;
+          _fsMbdb.Read(bSig, 0, bSig.Length);
 
-						_validHeader = InternalUtilities.ByteArraysAreEqual(this.HeaderId, InternalUtilities.MBDB_HEADER_BYTES);
-					}
-					catch { return false; }
-				}
+          this.HeaderId = bSig;
 
-				return (_validHeader ?? false);
-			}
+          _validHeader = InternalUtilities.ByteArraysAreEqual(this.HeaderId, InternalUtilities.MBDB_HEADER_BYTES);
+
+          return _validHeader ?? false;
+        }
+        catch { return false; }
+      }
 		}
 
 		/// <summary>
@@ -70,29 +71,30 @@ namespace iOSBackupLib
 		{
 			while (_fsMbdb.Position < _fsMbdb.Length)
 			{
-				MbdbRecord mbdbRec = new MbdbRecord();
-				mbdbRec.Domain = InternalUtilities.ReadStringValue(_fsMbdb);
-				mbdbRec.Path = InternalUtilities.ReadStringValue(_fsMbdb);
-				mbdbRec.LinkTarget = InternalUtilities.ReadStringValue(_fsMbdb);
-				mbdbRec.DataHash = InternalUtilities.ReadStringValue(_fsMbdb);
-				mbdbRec.Unknown_I = InternalUtilities.ReadStringValue(_fsMbdb);
-				mbdbRec.Mode = InternalUtilities.ReadUInt16Value(_fsMbdb);
-				mbdbRec.iNodeLookup = InternalUtilities.ReadUInt64Value(_fsMbdb);
-				mbdbRec.UserId = InternalUtilities.ReadUInt32Value(_fsMbdb);
-				mbdbRec.GroupId = InternalUtilities.ReadUInt32Value(_fsMbdb);
-				mbdbRec.LastModifiedTime = InternalUtilities.ReadUInt32Value(_fsMbdb);
-				mbdbRec.LastAccessTime = InternalUtilities.ReadUInt32Value(_fsMbdb);
-				mbdbRec.CreationTime = InternalUtilities.ReadUInt32Value(_fsMbdb);
-				mbdbRec.FileLength = InternalUtilities.ReadUInt64Value(_fsMbdb);
-				mbdbRec.ProtectionClass = (byte)_fsMbdb.ReadByte();
-				mbdbRec.PropertyCount = (byte)_fsMbdb.ReadByte();
+			  var mbdbRec = new MbdbRecord
+			  {
+			    Domain = InternalUtilities.ReadStringValue(_fsMbdb),
+			    Path = InternalUtilities.ReadStringValue(_fsMbdb),
+			    LinkTarget = InternalUtilities.ReadStringValue(_fsMbdb),
+			    DataHash = InternalUtilities.ReadStringValue(_fsMbdb),
+			    Unknown_I = InternalUtilities.ReadStringValue(_fsMbdb),
+			    Mode = InternalUtilities.ReadUInt16Value(_fsMbdb),
+			    iNodeLookup = InternalUtilities.ReadUInt64Value(_fsMbdb),
+			    UserId = InternalUtilities.ReadUInt32Value(_fsMbdb),
+			    GroupId = InternalUtilities.ReadUInt32Value(_fsMbdb),
+			    LastModifiedTime = InternalUtilities.ReadUInt32Value(_fsMbdb),
+			    LastAccessTime = InternalUtilities.ReadUInt32Value(_fsMbdb),
+			    CreationTime = InternalUtilities.ReadUInt32Value(_fsMbdb),
+			    FileLength = InternalUtilities.ReadUInt64Value(_fsMbdb),
+			    ProtectionClass = (byte)_fsMbdb.ReadByte(),
+			    PropertyCount = (byte)_fsMbdb.ReadByte(),
+			    Properties = new Dictionary<string, string>(),
+			  };
 
-				mbdbRec.Properties = new Dictionary<string, string>();
-
-        for (int i = 0; i < mbdbRec.PropertyCount; i++)
+			  for (int i = 0; i < mbdbRec.PropertyCount; i++)
 				{
-					string propName = InternalUtilities.ReadStringValue(_fsMbdb);
-					string propVal = InternalUtilities.ReadPropertyValue(_fsMbdb);
+					var propName = InternalUtilities.ReadStringValue(_fsMbdb);
+					var propVal = InternalUtilities.ReadPropertyValue(_fsMbdb);
 					mbdbRec.Properties.Add(propName, propVal);
 				}
 
@@ -100,6 +102,7 @@ namespace iOSBackupLib
 			}
 
 			_fsMbdb.Close();
+		  _fsMbdb.Dispose();
 		}
 
 		/// <summary>
@@ -110,17 +113,7 @@ namespace iOSBackupLib
 		{
 			get
 			{
-				var lstDomains = new List<string>();
-
-				foreach (var mbdbRec in this.MbdbRecords)
-				{
-					if (lstDomains.Contains(mbdbRec.Domain))
-						continue;
-
-					lstDomains.Add(mbdbRec.Domain);
-				}
-
-				return lstDomains;
+			  return this.MbdbRecords.Select(r => r.Domain).Distinct().ToList();
 			}
 		}
 

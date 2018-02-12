@@ -15,14 +15,14 @@ namespace iOSBackupUtil
 		{
 			// A test "Manifest.mbdb" file is currently copied
 			// into the working-directory prior to build.
-			bool go = false;
-			string[] dirs = null;
+			var go = false;
+			var dirs = new string[0];
 			int selection = -1;
 
 			do
 			{
 				Console.WriteLine("******************************");
-				Console.WriteLine("IOSBACKUPUTIL " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString());
+				Console.WriteLine("IOSBACKUPUTIL v" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 				Console.WriteLine("******************************");
 				Console.WriteLine("Please select a backup to analyze:");
 
@@ -36,7 +36,7 @@ namespace iOSBackupUtil
 				}
 
 				Console.Write("Backup to analyze: ");
-				string readVal = Console.ReadLine();
+				var readVal = Console.ReadLine();
 
 				Console.WriteLine();
 				Console.WriteLine();
@@ -45,11 +45,11 @@ namespace iOSBackupUtil
 				go = (int.TryParse(readVal, out selection) && selection >= 0 && selection < dirs.Length);
 			} while (go == false);
 
-      string dbgFile = @"C:\Users\gkaiser\AppData\Roaming\Apple Computer\MobileSync\Backup\3d73f1e6319fcafbb8feb21ba94355d9c4a6d99d\Manifest.mbdb";
-      MbdbFile mbdbFile = new MbdbFile(dirs[selection] + @"\Manifest.mbdb");
+      var dbgFile = @"C:\Users\gkaiser\AppData\Roaming\Apple Computer\MobileSync\Backup\3d73f1e6319fcafbb8feb21ba94355d9c4a6d99d\Manifest.mbdb";
+      var mbdbFile = new MbdbFile(dirs[selection] + @"\Manifest.mbdb");
 			mbdbFile.ReadFile();
 			
-			foreach (string mbdbDomain in mbdbFile.UniqueDomains)
+			foreach (var mbdbDomain in mbdbFile.UniqueDomains)
 				Console.WriteLine(mbdbDomain);
 
 			Console.WriteLine();
@@ -61,5 +61,6 @@ namespace iOSBackupUtil
 		{
 			return BitConverter.ToString(bytes);
 		}
+
 	}
 }
